@@ -1,0 +1,84 @@
+services:
+  bdfestivos:
+    build:
+      context: ./bdFestivos
+    container_name: dockerbdfestivos
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - redcalendario
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  apifestivos:
+    build:
+      context: ./apiFestivos
+    container_name: dockerapifestivos
+    restart: unless-stopped
+    environment:
+      DB_HOST: dockerbdfestivos
+      DB_PORT: 27017
+      DB_NAME: festivos
+    ports:
+      - "3030:3030"
+    depends_on:
+      bdfestivos:
+        condition: service_healthy
+    networks:
+      - redcalendario
+
+  bdcalendario:
+    build:
+      context: ./bdCalendario
+    container_name: dockerbdcalendario
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: calendario
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - redcalendario
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d calendario"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  apicalendario:
+    build:
+      context: ./apiCalendario
+    container_name: dockerapicalendario
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://dockerbdcalendario:5432/calendario
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      APIFESTIVOS_BASEURL: http://dockerapifestivos:3030
+    ports:
+      - "8081:8081"
+    depends_on:
+      bdcalendario:
+        condition: service_healthy
+      apifestivos:
+        condition: service_started
+    networks:
+      - redcalendario
+
+networks:
+  redcalendario:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  postgres_data:
