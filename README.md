@@ -33,6 +33,7 @@ docker compose ps
 ## Pruebas
 
 - Swagger festivos: http://localhost:3030/api-docs
+- Swagger calendario: http://localhost:8081/swagger-ui/index.html
 - Festivos de un año: http://localhost:3030/api/festivos/obtener/2026
 - Verificar fecha: http://localhost:3030/api/festivos/verificar/2026/12/25
 - Generar calendario: http://localhost:8081/api/calendario/generar/2026
